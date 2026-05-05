@@ -1,0 +1,44 @@
+{
+    "configurations": [
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:devkiller}",
+            "name": "Debug devkillerctl",
+            "target": "devkillerctl",
+            "configuration": "debug",
+            "preLaunchTask": "swift: Build Debug devkillerctl"
+        },
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:devkiller}",
+            "name": "Release devkillerctl",
+            "target": "devkillerctl",
+            "configuration": "release",
+            "preLaunchTask": "swift: Build Release devkillerctl"
+        },
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:devkiller}",
+            "name": "Debug devkillerbar",
+            "target": "devkillerbar",
+            "configuration": "debug",
+            "preLaunchTask": "swift: Build Debug devkillerbar"
+        },
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:devkiller}",
+            "name": "Release devkillerbar",
+            "target": "devkillerbar",
+            "configuration": "release",
+            "preLaunchTask": "swift: Build Release devkillerbar"
+        }
+    ]
+}

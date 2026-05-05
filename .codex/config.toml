@@ -1,0 +1,7 @@
+[agents.devkiller-core-reviewer]
+description = "Reviews DevKillerCore process discovery, lsof parsing, signal selection, and permission handling."
+config_file = "agents/devkiller-core-reviewer.toml"
+
+[agents.devkiller-qa]
+description = "Checks devkiller build/test/smoke coverage, macOS app constraints, and harness structure drift."
+config_file = "agents/devkiller-qa.toml"
