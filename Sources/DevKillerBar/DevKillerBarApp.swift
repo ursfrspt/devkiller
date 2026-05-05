@@ -33,6 +33,19 @@ final class DevKillerStore: ObservableObject {
     @Published var lastCheckedAt: Date?
 
     private let devKiller = DevKiller()
+    private let usesSampleServers: Bool
+
+    init(processInfo: ProcessInfo = .processInfo) {
+        usesSampleServers = processInfo.environment["DEVKILLER_SAMPLE_SERVERS"] == "1"
+            || processInfo.arguments.contains("--sample-servers")
+            || Self.usesDebugSampleServers
+
+        if usesSampleServers {
+            servers = Self.sampleServers
+            message = "Showing sample servers"
+            lastCheckedAt = Date()
+        }
+    }
 
     var lastCheckedText: String {
         guard let lastCheckedAt else {
@@ -48,6 +61,13 @@ final class DevKillerStore: ObservableObject {
 
     func refresh() async {
         guard !isLoading else {
+            return
+        }
+
+        if usesSampleServers {
+            servers = Self.sampleServers
+            message = "Showing sample servers"
+            lastCheckedAt = Date()
             return
         }
 
@@ -70,6 +90,11 @@ final class DevKillerStore: ObservableObject {
     }
 
     func terminate(_ server: DevelopmentServer) async {
+        if usesSampleServers {
+            message = "Sample data only"
+            return
+        }
+
         let devKiller = self.devKiller
         let result = await Task.detached {
             devKiller.terminate(server)
@@ -85,6 +110,11 @@ final class DevKillerStore: ObservableObject {
     }
 
     func terminateAll() async {
+        if usesSampleServers {
+            message = "Sample data only"
+            return
+        }
+
         let targets = servers
         let devKiller = self.devKiller
         let results = await Task.detached {
@@ -99,6 +129,40 @@ final class DevKillerStore: ObservableObject {
         }
 
         await refresh()
+    }
+
+    private static let sampleServers: [DevelopmentServer] = [
+        sample(pid: 43001, command: "vite", port: 5173, framework: "Vite dev server"),
+        sample(pid: 43002, command: "node", port: 3000, framework: "Next.js dev server"),
+        sample(pid: 43003, command: "node", port: 8081, framework: "Expo / React Native Metro"),
+        sample(pid: 43004, command: "storybook", port: 6006, framework: "Storybook"),
+        sample(pid: 43005, command: "python", port: 8000, framework: "Django dev server"),
+        sample(pid: 43006, command: "ruby", port: 9292, framework: "Rails dev server"),
+        sample(pid: 43007, command: "bun", port: 3001, framework: "Bun dev server"),
+        sample(pid: 43008, command: "deno", port: 8080, framework: "Deno dev server")
+    ]
+
+    private static func sample(pid: Int32, command: String, port: Int, framework: String) -> DevelopmentServer {
+        DevelopmentServer(
+            pid: pid,
+            command: command,
+            user: NSUserName(),
+            port: port,
+            endpoint: "localhost:\(port)",
+            classification: ServerClassification(
+                framework: framework,
+                confidence: .high,
+                reasons: ["sample menu data"]
+            )
+        )
+    }
+
+    private static var usesDebugSampleServers: Bool {
+        #if DEBUG
+        true
+        #else
+        false
+        #endif
     }
 }
 
@@ -236,11 +300,11 @@ private struct FrameworkIcon: View {
     let assetName: String?
 
     var body: some View {
-        if let assetName, let bundle = FrameworkIconAssets.bundle, FrameworkIconAssets.contains(assetName, in: bundle) {
+        if let assetName, let image = FrameworkIconAssets.image(named: assetName) {
             ZStack {
                 RoundedRectangle(cornerRadius: 4)
                     .fill(.white)
-                Image(assetName, bundle: bundle)
+                Image(nsImage: image)
                     .resizable()
                     .renderingMode(.original)
                     .scaledToFit()
@@ -255,19 +319,15 @@ private struct FrameworkIcon: View {
 }
 
 private enum FrameworkIconAssets {
-    private static let bundleName = "devkiller_DevKillerBar.bundle"
+    static let bundle: Bundle? = Bundle.module
 
-    static let bundle: Bundle? = {
-        let candidates = [
-            Bundle.main.resourceURL?.appendingPathComponent(bundleName),
-            Bundle.main.bundleURL.appendingPathComponent(bundleName),
-            Bundle.main.executableURL?.deletingLastPathComponent().appendingPathComponent(bundleName)
-        ].compactMap { $0 }
+    static func image(named assetName: String) -> NSImage? {
+        guard let url = bundle?.url(forResource: assetName, withExtension: "png"),
+              let image = NSImage(contentsOf: url) else {
+            return nil
+        }
 
-        return candidates.lazy.compactMap { Bundle(url: $0) }.first
-    }()
-
-    static func contains(_ assetName: String, in bundle: Bundle) -> Bool {
-        bundle.url(forResource: assetName, withExtension: "png") != nil
+        image.isTemplate = false
+        return image
     }
 }
