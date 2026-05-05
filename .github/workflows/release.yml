@@ -32,19 +32,23 @@ jobs:
           if [[ "${GITHUB_REF_TYPE:-}" == "tag" ]]; then
             version="${GITHUB_REF_NAME#v}"
             release_tag="v$version"
+            release_title="DevKiller $version"
             prerelease="false"
           elif [[ -n "$INPUT_VERSION" ]]; then
             version="$INPUT_VERSION"
             release_tag="v$version"
+            release_title="DevKiller $version"
             prerelease="false"
           else
-            version="0.1.${GITHUB_RUN_NUMBER}"
             release_tag="build-${GITHUB_RUN_NUMBER}-${GITHUB_SHA::7}"
+            version="0.0.${GITHUB_RUN_NUMBER}"
+            release_title="DevKiller Nightly ${release_tag}"
             prerelease="true"
           fi
 
           echo "DEVKILLER_VERSION=$version" >> "$GITHUB_ENV"
           echo "RELEASE_TAG=$release_tag" >> "$GITHUB_ENV"
+          echo "RELEASE_TITLE=$release_title" >> "$GITHUB_ENV"
           echo "RELEASE_PRERELEASE=$prerelease" >> "$GITHUB_ENV"
 
       - name: Run tests
@@ -114,7 +118,7 @@ jobs:
         run: |
           release_notes="$(mktemp)"
           cat > "$release_notes" <<EOF
-          DevKiller ${DEVKILLER_VERSION}
+          ${RELEASE_TITLE}
 
           Download DevKiller-${DEVKILLER_VERSION}.zip, unzip it, and move DevKiller.app to Applications.
 
@@ -125,7 +129,7 @@ jobs:
             "$RELEASE_TAG"
             "dist/DevKiller-${DEVKILLER_VERSION}.zip" \
             "dist/DevKiller-${DEVKILLER_VERSION}.zip.sha256" \
-            --title "DevKiller ${DEVKILLER_VERSION}" \
+            --title "$RELEASE_TITLE" \
             --notes-file "$release_notes"
           )
 

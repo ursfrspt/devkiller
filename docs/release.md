@@ -4,7 +4,7 @@ DevKiller는 Mac App Store가 아니라 GitHub Releases를 통해 직접 배포�
 
 ## 릴리스 방식
 
-- `main` 브랜치에 push하면 `build-<run>-<sha>` 이름의 GitHub prerelease가 생성된다.
+- `main` 브랜치에 push하면 `DevKiller Nightly build-<run>-<sha>` 제목의 GitHub prerelease가 생성된다.
 - `v0.1.0` 같은 태그를 push하면 일반 GitHub release가 생성된다.
 - unsigned 빌드는 로컬 테스트나 내부 테스트용으로만 사용한다.
 - 공개 배포는 Developer ID 서명과 Apple notarization을 사용한다.
