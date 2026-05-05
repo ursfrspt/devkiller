@@ -236,11 +236,11 @@ private struct FrameworkIcon: View {
     let assetName: String?
 
     var body: some View {
-        if let assetName {
+        if let assetName, let bundle = FrameworkIconAssets.bundle, FrameworkIconAssets.contains(assetName, in: bundle) {
             ZStack {
                 RoundedRectangle(cornerRadius: 4)
                     .fill(.white)
-                Image(assetName, bundle: .module)
+                Image(assetName, bundle: bundle)
                     .resizable()
                     .renderingMode(.original)
                     .scaledToFit()
@@ -251,5 +251,23 @@ private struct FrameworkIcon: View {
             Image(systemName: "terminal")
                 .frame(width: 18, height: 18)
         }
+    }
+}
+
+private enum FrameworkIconAssets {
+    private static let bundleName = "devkiller_DevKillerBar.bundle"
+
+    static let bundle: Bundle? = {
+        let candidates = [
+            Bundle.main.resourceURL?.appendingPathComponent(bundleName),
+            Bundle.main.bundleURL.appendingPathComponent(bundleName),
+            Bundle.main.executableURL?.deletingLastPathComponent().appendingPathComponent(bundleName)
+        ].compactMap { $0 }
+
+        return candidates.lazy.compactMap { Bundle(url: $0) }.first
+    }()
+
+    static func contains(_ assetName: String, in bundle: Bundle) -> Bool {
+        bundle.url(forResource: assetName, withExtension: "png") != nil
     }
 }
