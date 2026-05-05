@@ -8,6 +8,11 @@ if [[ -z "$ZIP_PATH" ]]; then
   ZIP_PATH="$("$ROOT_DIR/scripts/package-zip.sh" | head -n 1)"
 fi
 
+case "$ZIP_PATH" in
+  /*) ;;
+  *) ZIP_PATH="$ROOT_DIR/$ZIP_PATH" ;;
+esac
+
 if [[ -z "${DEVKILLER_NOTARY_PROFILE:-}" ]]; then
   cat >&2 <<'EOF'
 Set DEVKILLER_NOTARY_PROFILE to a notarytool keychain profile name.
