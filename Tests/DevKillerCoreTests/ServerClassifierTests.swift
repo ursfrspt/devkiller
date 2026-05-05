@@ -36,4 +36,20 @@ final class ServerClassifierTests: XCTestCase {
 
         XCTAssertEqual(classification.framework, "Vite dev server")
     }
+
+    func testExpoMetroPortIsIdentified() {
+        let classification = ServerClassifier.classify(command: "node", port: 8081)
+
+        XCTAssertEqual(classification.framework, "Expo / React Native Metro")
+        XCTAssertEqual(classification.confidence, .high)
+        XCTAssertTrue(classification.isLikelyDevelopmentServer)
+    }
+
+    func testExpoMetroFallbackPortIsIdentified() {
+        let classification = ServerClassifier.classify(command: "node", port: 8082)
+
+        XCTAssertEqual(classification.framework, "Expo / React Native Metro")
+        XCTAssertEqual(classification.confidence, .high)
+        XCTAssertTrue(classification.isLikelyDevelopmentServer)
+    }
 }
