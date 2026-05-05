@@ -27,24 +27,45 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
 @MainActor
 final class DevKillerStore: ObservableObject {
+    typealias ServerProvider = @Sendable () throws -> [DevelopmentServer]
+
     @Published var servers: [DevelopmentServer] = []
     @Published var isLoading = false
     @Published var message: String?
     @Published var lastCheckedAt: Date?
 
     private let devKiller = DevKiller()
+    private let serverProvider: ServerProvider
     private let usesSampleServers: Bool
+    private let autoRefreshInterval: Duration?
+    private var autoRefreshTask: Task<Void, Never>?
 
-    init(processInfo: ProcessInfo = .processInfo) {
-        usesSampleServers = processInfo.environment["DEVKILLER_SAMPLE_SERVERS"] == "1"
+    init(
+        processInfo: ProcessInfo = .processInfo,
+        usesSampleServers: Bool? = nil,
+        serverProvider: ServerProvider? = nil,
+        autoRefreshInterval: Duration? = .seconds(3)
+    ) {
+        let sampleMode = processInfo.environment["DEVKILLER_SAMPLE_SERVERS"] == "1"
             || processInfo.arguments.contains("--sample-servers")
             || Self.usesDebugSampleServers
 
-        if usesSampleServers {
+        self.usesSampleServers = usesSampleServers ?? sampleMode
+        self.serverProvider = serverProvider ?? {
+            let devKiller = DevKiller()
+            return try devKiller.list(includeLowConfidence: false)
+        }
+        self.autoRefreshInterval = autoRefreshInterval
+
+        if self.usesSampleServers {
             servers = Self.sampleServers
             message = "Showing sample servers"
             lastCheckedAt = Date()
         }
+    }
+
+    deinit {
+        autoRefreshTask?.cancel()
     }
 
     var lastCheckedText: String {
@@ -73,11 +94,11 @@ final class DevKillerStore: ObservableObject {
 
         isLoading = true
         defer { isLoading = false }
-        let devKiller = self.devKiller
+        let serverProvider = self.serverProvider
 
         do {
             let servers = try await Task.detached {
-                try devKiller.list(includeLowConfidence: false)
+                try serverProvider()
             }.value
 
             self.servers = servers
@@ -87,6 +108,28 @@ final class DevKillerStore: ObservableObject {
             self.message = error.localizedDescription
             self.lastCheckedAt = Date()
         }
+    }
+
+    func startAutoRefresh() {
+        guard autoRefreshTask == nil, let autoRefreshInterval else {
+            return
+        }
+
+        autoRefreshTask = Task { [weak self] in
+            while !Task.isCancelled {
+                await self?.refresh()
+                do {
+                    try await Task.sleep(for: autoRefreshInterval)
+                } catch {
+                    break
+                }
+            }
+        }
+    }
+
+    func stopAutoRefresh() {
+        autoRefreshTask?.cancel()
+        autoRefreshTask = nil
     }
 
     func terminate(_ server: DevelopmentServer) async {
@@ -219,7 +262,7 @@ struct DevKillerMenuView: View {
         .padding(12)
         .frame(width: 260)
         .onAppear {
-            Task { await store.refresh() }
+            store.startAutoRefresh()
         }
     }
 }

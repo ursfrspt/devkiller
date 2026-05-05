@@ -28,6 +28,10 @@ let package = Package(
         .testTarget(
             name: "DevKillerCoreTests",
             dependencies: ["DevKillerCore"]
+        ),
+        .testTarget(
+            name: "DevKillerBarTests",
+            dependencies: ["DevKillerBar"]
         )
     ]
 )
