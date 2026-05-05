@@ -29,6 +29,7 @@ swift run devkillerbar
 ## Direct Distribution
 
 The release path is GitHub Releases with a signed, notarized `.zip` containing `DevKiller.app`.
+Developer ID, notarization, and GitHub Actions setup steps are documented in [docs/release.md](docs/release.md).
 
 Local unsigned development bundle:
 
@@ -57,7 +58,7 @@ git tag v0.1.0
 git push origin v0.1.0
 ```
 
-The `Release` GitHub Actions workflow runs tests, builds the app, creates `DevKiller-<version>.zip`, generates a `.sha256` file, and uploads both files to GitHub Releases.
+The `Release` GitHub Actions workflow runs tests, builds the app, creates `DevKiller-<version>.zip`, generates a `.sha256` file, and uploads both files to GitHub Releases. Pushes to `main` create prerelease builds tagged as `build-<run>-<sha>`. Tags such as `v0.1.0` create normal releases.
 
 Unsigned builds are useful for testing, but public macOS downloads should be Developer ID signed and notarized to avoid Gatekeeper warnings. Add these GitHub repository secrets before publishing a public release:
 

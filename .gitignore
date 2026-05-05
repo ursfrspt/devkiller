@@ -4,3 +4,17 @@
 dist/
 xcuserdata/
 DerivedData/
+
+# 로컬 서명/공증 자료.
+# Developer ID 개인 키나 내보낸 인증서는 절대 커밋하지 않는다.
+*.p12
+*.cer
+*.certSigningRequest
+*.mobileprovision
+notary-*.json
+notary-log*.json
+
+# 로컬 릴리스 산출물.
+*.zip
+*.zip.sha256
+*.dmg
