@@ -319,7 +319,18 @@ private struct FrameworkIcon: View {
 }
 
 private enum FrameworkIconAssets {
-    static let bundle: Bundle? = Bundle.module
+    private static let bundleName = "devkiller_DevKillerBar.bundle"
+
+    static let bundle: Bundle? = {
+        let candidates = [
+            Bundle.main.resourceURL?.appendingPathComponent(bundleName),
+            Bundle.main.bundleURL.appendingPathComponent(bundleName)
+        ]
+
+        return candidates.compactMap { url in
+            url.flatMap { Bundle(url: $0) }
+        }.first
+    }()
 
     static func image(named assetName: String) -> NSImage? {
         guard let url = bundle?.url(forResource: assetName, withExtension: "png"),
