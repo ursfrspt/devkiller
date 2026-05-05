@@ -20,7 +20,10 @@ let package = Package(
         ),
         .executableTarget(
             name: "DevKillerBar",
-            dependencies: ["DevKillerCore"]
+            dependencies: ["DevKillerCore"],
+            resources: [
+                .process("Resources")
+            ]
         ),
         .testTarget(
             name: "DevKillerCoreTests",
