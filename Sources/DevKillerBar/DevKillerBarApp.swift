@@ -81,7 +81,7 @@ final class DevKillerStore: ObservableObject {
             }.value
 
             self.servers = servers
-            self.message = servers.isEmpty ? "No dev servers found" : nil
+            self.message = servers.isEmpty ? "No dev servers found. Check Local Network access if macOS prompted." : nil
             self.lastCheckedAt = Date()
         } catch {
             self.message = error.localizedDescription

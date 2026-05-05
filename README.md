@@ -102,6 +102,8 @@ Useful release environment variables:
 
 The menu bar app and CLI only show medium/high confidence matches by default. `devkillerctl list --all` can show low-confidence listeners for debugging.
 
+On first launch, macOS may ask whether DevKiller can access the local network. Allow this permission so the release app can inspect local listening development servers. If it was denied, enable DevKiller again in System Settings > Privacy & Security > Local Network.
+
 ## macOS App Direction
 
 - Use SwiftUI `MenuBarExtra` for a menu bar only app.

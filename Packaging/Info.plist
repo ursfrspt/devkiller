@@ -26,5 +26,7 @@
 	<true/>
 	<key>NSHighResolutionCapable</key>
 	<true/>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>DevKiller scans local development servers listening on your Mac so you can stop them from the menu bar.</string>
 </dict>
 </plist>

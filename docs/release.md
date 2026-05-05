@@ -143,3 +143,13 @@ codesign --verify --deep --strict --verbose=2 dist/DevKiller.app
 spctl --assess --type execute --verbose dist/DevKiller.app
 xcrun stapler validate dist/DevKiller.app
 ```
+
+### 개발 서버가 보이지 않을 때
+
+배포 앱을 처음 실행하면 macOS가 Local Network 접근 허용 여부를 물을 수 있다. DevKiller는 로컬에서 listen 중인 개발 서버를 찾기 위해 이 권한이 필요하므로 허용해야 한다.
+
+이미 거부했다면 System Settings > Privacy & Security > Local Network에서 DevKiller를 다시 허용한 뒤 앱을 재실행한다. 같은 서버가 CLI에서는 보이지만 앱에서 보이지 않는다면 먼저 아래 명령으로 코어 감지가 정상인지 확인한다:
+
+```bash
+swift run devkillerctl list --all
+```
