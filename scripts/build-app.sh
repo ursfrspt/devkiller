@@ -23,12 +23,14 @@ if [[ "$CONFIGURATION" != "release" && "$CONFIGURATION" != "debug" ]]; then
 fi
 
 swift build -c "$CONFIGURATION" --product "$PRODUCT_NAME" >&2
+BUILD_DIR="$(cd "$ROOT_DIR/.build/$CONFIGURATION" && pwd -P)"
 
 rm -rf "$APP_DIR"
 mkdir -p "$MACOS_DIR" "$RESOURCES_DIR"
 
-cp "$ROOT_DIR/.build/$CONFIGURATION/$PRODUCT_NAME" "$MACOS_DIR/$EXECUTABLE_NAME"
+cp "$BUILD_DIR/$PRODUCT_NAME" "$MACOS_DIR/$EXECUTABLE_NAME"
 cp "$ROOT_DIR/Packaging/Info.plist" "$INFO_PLIST"
+find "$BUILD_DIR" -maxdepth 1 -type d -name "*.bundle" -exec cp -R {} "$RESOURCES_DIR/" \;
 chmod 755 "$MACOS_DIR/$EXECUTABLE_NAME"
 
 /usr/libexec/PlistBuddy -c "Set :CFBundleExecutable $EXECUTABLE_NAME" "$INFO_PLIST"
