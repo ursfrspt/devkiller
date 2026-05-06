@@ -1,40 +1,47 @@
 # DevKiller
 
-DevKiller is a macOS menu bar app for finding and stopping local development servers.
+DevKiller is a macOS menu bar app that finds local development servers and lets you stop them with a click.
 
-It watches for common dev servers such as Vite, Next.js, React, Expo, Storybook, Django, Rails, PHP, Jupyter, and other processes listening on local ports. When a server is no longer needed, you can stop it from the menu bar instead of searching for the process manually.
+It is for people who run tools like Vite, Next.js, React, Expo, Storybook, Django, Rails, PHP, or Jupyter and later wonder which terminal command is still using a port. Instead of searching for a process ID or typing `kill`, open DevKiller from the menu bar and stop the server there.
+
+## Who It Helps
+
+- You started a local app and forgot which terminal tab is running it.
+- A port such as `3000`, `5173`, `8000`, or `8081` is still busy.
+- You want to stop old dev servers without learning `lsof`, `ps`, or `kill`.
+- You are using AI coding tools and want a simple way to clean up local servers between runs.
 
 ## Requirements
 
 - macOS 13 Ventura or newer
 - Local Network permission, if macOS asks for it
 
-## Open DevKiller
+DevKiller is a menu bar app. It does not show a Dock icon.
 
-If you have `DevKiller.app`, open it like any other macOS app.
+## Install And Open
 
-For a local development build:
+If you downloaded `DevKiller.app` or a `DevKiller-*.zip` file:
 
-```bash
-./scripts/build-app.sh
-open dist/DevKiller.app
-```
+1. Unzip the file if needed.
+2. Move `DevKiller.app` to your Applications folder.
+3. Open `DevKiller.app`.
+4. Look for the DevKiller icon in the macOS menu bar.
 
-DevKiller runs in the menu bar. It does not show a Dock icon.
+If macOS says the app cannot be opened because it was downloaded from the internet, right-click `DevKiller.app`, choose `Open`, then confirm that you want to open it.
 
-## Use The Menu Bar App
+## Use DevKiller
 
 1. Click the DevKiller icon in the macOS menu bar.
 2. Review the detected development servers.
-3. Choose a server to stop it.
+3. Click a server to stop it.
 4. Use `Kill All Dev Servers` when you want to stop every detected dev server at once.
 5. Choose `Quit DevKiller` when you are done.
 
-The app refreshes automatically while the menu is open. Each item shows the port and the likely framework or command, such as `Kill :5173 Vite` or `Kill :3000 Next.js`.
+Each menu item shows the port and the likely framework or command, such as `Kill :5173 Vite` or `Kill :3000 Next.js`.
 
-## What DevKiller Looks For
+## What DevKiller Finds
 
-DevKiller checks local TCP listeners and highlights likely development servers. It favors common development ports and process names, including:
+DevKiller checks local TCP listeners and highlights likely development servers. It looks for common development ports and process names, including:
 
 - Vite, React, Next.js, Nuxt, Astro, Angular, Storybook, Expo, and Metro
 - Node.js, Bun, Deno, webpack, and Tauri
@@ -44,9 +51,9 @@ DevKiller hides low-confidence matches by default so system services are less li
 
 ## Stopping Servers
 
-DevKiller uses normal process termination first. If macOS does not allow the process to be stopped, the app shows the error instead of asking for administrator privileges.
+DevKiller first asks the server to quit normally.
 
-Some servers may restart automatically if another tool is supervising them. In that case, stop the parent tool or terminal command that started the server.
+If macOS does not allow DevKiller to stop a process, the app shows the error instead of asking for administrator privileges. Some servers may also restart automatically if another tool is supervising them. In that case, stop the parent tool, terminal command, or editor task that started the server.
 
 ## Local Network Permission
 
@@ -74,26 +81,39 @@ If a server cannot be stopped:
 - The process may belong to another user.
 - The process may have already exited.
 - Another development tool may be restarting it.
-- Stop it from the terminal or the tool that launched it.
+- Stop it from the terminal, editor task, or tool that launched it.
 
-## Command Line
+## For Developers
 
-DevKiller also includes a command-line helper for advanced users:
+DevKiller is built as a small Swift package:
+
+- `DevKillerCore` contains process discovery and termination logic.
+- `DevKillerBar` is the macOS menu bar app.
+- `devkillerctl` is a command-line helper for testing and advanced use.
+
+Build and open the app locally:
+
+```bash
+./scripts/build-app.sh
+open dist/DevKiller.app
+```
+
+Run checks before handing off changes:
+
+```bash
+swift test
+swift build
+swift run devkillerctl list
+```
+
+Advanced command-line usage:
 
 ```bash
 swift run devkillerctl list
+swift run devkillerctl list --all
 swift run devkillerctl kill 3000
+swift run devkillerctl kill 3000 --force
 swift run devkillerctl kill-all
 ```
 
-Use `--all` with `list` to show low-confidence listeners:
-
-```bash
-swift run devkillerctl list --all
-```
-
-Use `--force` only when normal termination does not work:
-
-```bash
-swift run devkillerctl kill 3000 --force
-```
+Use `--force` only when normal termination does not work.
