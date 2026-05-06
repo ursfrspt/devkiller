@@ -1,112 +1,99 @@
-# devkiller
+# DevKiller
 
-macOS menu bar utility for finding and stopping local development servers.
+DevKiller is a macOS menu bar app for finding and stopping local development servers.
 
-## Harness
+It watches for common dev servers such as Vite, Next.js, React, Expo, Storybook, Django, Rails, PHP, Jupyter, and other processes listening on local ports. When a server is no longer needed, you can stop it from the menu bar instead of searching for the process manually.
 
-This repository starts with a Swift Package harness:
+## Requirements
 
-- `DevKillerCore`: port scanning and process signaling logic.
-- `devkillerctl`: CLI smoke-test wrapper for the core behavior.
-- `DevKillerCoreTests`: parser and scanner tests using Swift Testing.
-- `scripts/check.sh`: one-command local verification.
+- macOS 13 Ventura or newer
+- Local Network permission, if macOS asks for it
 
-The GUI app should wrap `DevKillerCore` from a macOS SwiftUI `MenuBarExtra` target.
+## Open DevKiller
 
-## Commands
+If you have `DevKiller.app`, open it like any other macOS app.
 
-```bash
-swift test
-swift run devkillerctl list
-swift run devkillerctl kill 3000
-swift run devkillerctl kill-all
-swift run devkillerbar
-./scripts/build-app.sh
-./scripts/package-zip.sh
-./scripts/check.sh
-```
-
-## Direct Distribution
-
-The release path is GitHub Releases with a signed, notarized `.zip` containing `DevKiller.app`.
-Developer ID, notarization, and GitHub Actions setup steps are documented in [docs/release.md](docs/release.md).
-
-Local unsigned development bundle:
+For a local development build:
 
 ```bash
 ./scripts/build-app.sh
 open dist/DevKiller.app
 ```
 
-Release zip:
+DevKiller runs in the menu bar. It does not show a Dock icon.
+
+## Use The Menu Bar App
+
+1. Click the DevKiller icon in the macOS menu bar.
+2. Review the detected development servers.
+3. Choose a server to stop it.
+4. Use `Kill All Dev Servers` when you want to stop every detected dev server at once.
+5. Choose `Quit DevKiller` when you are done.
+
+The app refreshes automatically while the menu is open. Each item shows the port and the likely framework or command, such as `Kill :5173 Vite` or `Kill :3000 Next.js`.
+
+## What DevKiller Looks For
+
+DevKiller checks local TCP listeners and highlights likely development servers. It favors common development ports and process names, including:
+
+- Vite, React, Next.js, Nuxt, Astro, Angular, Storybook, Expo, and Metro
+- Node.js, Bun, Deno, webpack, and Tauri
+- Python, Django, Flask, Jupyter, Rails, Ruby, PHP, Java, Gradle, Hugo, and similar local servers
+
+DevKiller hides low-confidence matches by default so system services are less likely to appear in the app.
+
+## Stopping Servers
+
+DevKiller uses normal process termination first. If macOS does not allow the process to be stopped, the app shows the error instead of asking for administrator privileges.
+
+Some servers may restart automatically if another tool is supervising them. In that case, stop the parent tool or terminal command that started the server.
+
+## Local Network Permission
+
+On first launch, macOS may ask whether DevKiller can access the local network. Allow this permission so DevKiller can inspect local listening development servers.
+
+If you denied the permission:
+
+1. Open System Settings.
+2. Go to Privacy & Security.
+3. Open Local Network.
+4. Enable DevKiller.
+5. Quit and reopen DevKiller.
+
+## Troubleshooting
+
+If no servers appear:
+
+- Make sure the development server is still running.
+- Open the server in your browser to confirm it responds locally.
+- Check that DevKiller has Local Network permission.
+- Quit and reopen DevKiller.
+
+If a server cannot be stopped:
+
+- The process may belong to another user.
+- The process may have already exited.
+- Another development tool may be restarting it.
+- Stop it from the terminal or the tool that launched it.
+
+## Command Line
+
+DevKiller also includes a command-line helper for advanced users:
 
 ```bash
-DEVKILLER_VERSION=0.1.0 ./scripts/package-zip.sh
+swift run devkillerctl list
+swift run devkillerctl kill 3000
+swift run devkillerctl kill-all
 ```
 
-GitHub release from a tag:
+Use `--all` with `list` to show low-confidence listeners:
 
 ```bash
-git init
-git add .
-git commit -m "Initial DevKiller release"
-git branch -M main
-git remote add origin git@github.com:YOUR_GITHUB_USER/devkiller.git
-git push -u origin main
-
-git tag v0.1.0
-git push origin v0.1.0
+swift run devkillerctl list --all
 ```
 
-The `Release` GitHub Actions workflow runs tests, builds the app, creates `DevKiller-<version>.zip`, generates a `.sha256` file, and uploads both files to GitHub Releases. Pushes to `main` create prerelease builds titled `DevKiller Nightly build-<run>-<sha>`. Tags such as `v0.1.0` create normal releases.
-
-Unsigned builds are useful for testing, but public macOS downloads should be Developer ID signed and notarized to avoid Gatekeeper warnings. Add these GitHub repository secrets before publishing a public release:
-
-- `DEVKILLER_DEVELOPER_ID_CERTIFICATE_BASE64`: base64-encoded Developer ID Application `.p12`
-- `DEVKILLER_DEVELOPER_ID_CERTIFICATE_PASSWORD`: password for the `.p12`
-- `DEVKILLER_CODESIGN_IDENTITY`: Developer ID Application identity
-- `DEVKILLER_KEYCHAIN_PASSWORD`: temporary CI keychain password
-- `APPLE_ID`: Apple ID used for notarization
-- `APPLE_TEAM_ID`: Apple Developer Team ID
-- `APPLE_APP_SPECIFIC_PASSWORD`: app-specific password for notarization
-
-Developer ID signing and notarization:
+Use `--force` only when normal termination does not work:
 
 ```bash
-xcrun notarytool store-credentials devkiller-notary \
-  --apple-id you@example.com \
-  --team-id YOURTEAMID \
-  --password APP_SPECIFIC_PASSWORD
-
-DEVKILLER_CODESIGN_IDENTITY="Developer ID Application: Your Name (TEAMID)" \
-DEVKILLER_NOTARY_PROFILE=devkiller-notary \
-DEVKILLER_VERSION=0.1.0 \
-./scripts/notarize-zip.sh
+swift run devkillerctl kill 3000 --force
 ```
-
-Useful release environment variables:
-
-- `DEVKILLER_BUNDLE_ID`: bundle identifier, defaults to `com.igyeongjun.DevKiller`
-- `DEVKILLER_VERSION`: marketing version, defaults to `0.1.0`
-- `DEVKILLER_BUILD_NUMBER`: build number, defaults to `1`
-- `DEVKILLER_CODESIGN_IDENTITY`: Developer ID Application identity for public releases
-- `DEVKILLER_NOTARY_PROFILE`: `notarytool` keychain profile name
-
-## Development Server Detection
-
-`DevKillerCore` scans listening TCP processes with structured `lsof -F` output. It classifies likely development servers with a conservative heuristic:
-
-- known development ports, such as 3000, 5173, 4200, 6006, 8000, and 8081
-- process command hints, such as `node`, `vite`, `python`, `rails`, `puma`, `php`, and `uvicorn`
-- a small macOS system-process deny-list to avoid killing services such as `ControlCenter` on port 5000
-
-The menu bar app and CLI only show medium/high confidence matches by default. `devkillerctl list --all` can show low-confidence listeners for debugging.
-
-On first launch, macOS may ask whether DevKiller can access the local network. Allow this permission so the release app can inspect local listening development servers. If it was denied, enable DevKiller again in System Settings > Privacy & Security > Local Network.
-
-## macOS App Direction
-
-- Use SwiftUI `MenuBarExtra` for a menu bar only app.
-- Set `LSUIElement` to `true` so the app does not appear in the Dock or app switcher.
-- Use `SMAppService.mainApp.register()` for optional launch at login on macOS 13+.
-- Keep shell/process code in `DevKillerCore`; the app target should only present state and call core services.

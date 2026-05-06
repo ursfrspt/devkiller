@@ -2,6 +2,8 @@
 .build/
 .swiftpm/
 dist/
+docs/
+_workspace/
 xcuserdata/
 DerivedData/
 
