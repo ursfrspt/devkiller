@@ -28,7 +28,34 @@ public struct UsageService: UsageProviding {
     }
 
     public func fetchAll() -> [ToolUsage] {
-        [claude(), codex()]
+        // Run both providers concurrently so a slow/hanging Claude CLI fetch
+        // doesn't delay returning Codex's already-available data. Results are
+        // written into fixed index slots so the returned order stays
+        // [claude, codex] regardless of which finishes first.
+        var results: [ToolUsage?] = [nil, nil]
+        let lock = NSLock()
+        let group = DispatchGroup()
+
+        group.enter()
+        DispatchQueue.global(qos: .userInitiated).async {
+            let result = self.claude()
+            lock.lock()
+            results[0] = result
+            lock.unlock()
+            group.leave()
+        }
+
+        group.enter()
+        DispatchQueue.global(qos: .userInitiated).async {
+            let result = self.codex()
+            lock.lock()
+            results[1] = result
+            lock.unlock()
+            group.leave()
+        }
+
+        group.wait()
+        return results.compactMap { $0 }
     }
 }
 
