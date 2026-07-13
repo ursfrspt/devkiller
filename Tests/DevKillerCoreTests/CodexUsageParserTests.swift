@@ -22,7 +22,24 @@ final class CodexUsageParserTests: XCTestCase {
         XCTAssertEqual(windows[0].usedPercent, 19.0)
         XCTAssertEqual(windows[0].resetsAt, Date(timeIntervalSince1970: 1784495024))
         XCTAssertNil(windows[0].resetText)
-        XCTAssertEqual(asOf, ISO8601DateFormatter().date(from: "2026-07-13T14:03:08.874Z"))
+
+        // Verify that asOf is not nil (regression check: broken formatter returns nil)
+        XCTAssertNotNil(asOf)
+
+        // Build expected date from components to avoid relying on broken formatter
+        var expectedComponents = DateComponents()
+        expectedComponents.year = 2026
+        expectedComponents.month = 7
+        expectedComponents.day = 13
+        expectedComponents.hour = 14
+        expectedComponents.minute = 3
+        expectedComponents.second = 8
+        var utcCalendar = Calendar(identifier: .gregorian)
+        utcCalendar.timeZone = TimeZone(identifier: "UTC")!
+        let expectedDate = utcCalendar.date(from: expectedComponents)!
+
+        // Assert parsed asOf is close to expected (within ~1 second to tolerate fractional seconds)
+        XCTAssertEqual(asOf!.timeIntervalSince1970, expectedDate.timeIntervalSince1970, accuracy: 1.0)
     }
 
     func testParsesBothWindowsFiveHourFirst() {

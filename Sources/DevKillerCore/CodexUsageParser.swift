@@ -21,6 +21,12 @@ public enum CodexUsageParser {
         let resets_at: Double?
     }
 
+    private static let isoFormatter: ISO8601DateFormatter = {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return formatter
+    }()
+
     public static func parse(_ rolloutLine: String) -> ToolUsageState {
         guard let data = rolloutLine.data(using: .utf8),
               let decoded = try? JSONDecoder().decode(RolloutLine.self, from: data),
@@ -37,7 +43,7 @@ public enum CodexUsageParser {
             return .unavailable(reason: "No Codex rate limit data")
         }
 
-        let asOf = decoded.timestamp.flatMap { ISO8601DateFormatter().date(from: $0) }
+        let asOf = decoded.timestamp.flatMap { Self.isoFormatter.date(from: $0) }
         return .available(windows: parsed, asOf: asOf)
     }
 
