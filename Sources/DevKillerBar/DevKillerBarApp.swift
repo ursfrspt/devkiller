@@ -226,11 +226,125 @@ final class DevKillerStore: ObservableObject {
     }
 }
 
+func usageBarColor(for severity: UsageSeverity) -> Color {
+    switch severity {
+    case .normal: return .green
+    case .warning: return .orange
+    case .critical: return .red
+    }
+}
+
+func usageResetDisplay(window: UsageWindow) -> String? {
+    if let text = window.resetText {
+        return "resets \(text)"
+    }
+    if let date = window.resetsAt {
+        return "resets \(date.formatted(date: .abbreviated, time: .shortened))"
+    }
+    return nil
+}
+
+struct UsageSectionView: View {
+    let usage: [ToolUsage]
+    let isLoading: Bool
+    let refresh: () -> Void
+
+    private var visibleTools: [ToolUsage] {
+        usage.filter { tool in
+            if case .notInstalled = tool.state { return false }
+            return true
+        }
+    }
+
+    var body: some View {
+        if !visibleTools.isEmpty || isLoading {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(spacing: 8) {
+                    Text("Usage")
+                        .font(.caption).bold()
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    Button(action: refresh) {
+                        Image(systemName: "arrow.clockwise")
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(isLoading)
+                }
+
+                ForEach(visibleTools, id: \.tool.rawValue) { tool in
+                    UsageToolBlock(tool: tool)
+                }
+            }
+            Divider()
+        }
+    }
+}
+
+struct UsageToolBlock: View {
+    let tool: ToolUsage
+
+    private var title: String {
+        tool.tool == .claudeCode ? "Claude Code" : "Codex"
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(title).font(.caption).bold()
+
+            switch tool.state {
+            case let .available(windows, asOf):
+                ForEach(Array(windows.enumerated()), id: \.offset) { _, window in
+                    UsageBarRow(window: window)
+                }
+                if let asOf, isUsageStale(asOf: asOf, now: Date()) {
+                    Text("stale · as of \(asOf.formatted(date: .omitted, time: .shortened))")
+                        .font(.caption2).foregroundStyle(.tertiary)
+                } else if let asOf {
+                    Text("as of \(asOf.formatted(date: .omitted, time: .shortened))")
+                        .font(.caption2).foregroundStyle(.secondary)
+                }
+            case let .unavailable(reason):
+                Text(reason).font(.caption2).foregroundStyle(.secondary)
+            case .notInstalled:
+                EmptyView()
+            }
+        }
+    }
+}
+
+struct UsageBarRow: View {
+    let window: UsageWindow
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            HStack(spacing: 8) {
+                Text(window.label)
+                    .font(.caption2)
+                    .frame(width: 120, alignment: .leading)
+                ProgressView(value: min(window.usedPercent, 100), total: 100)
+                    .tint(usageBarColor(for: window.severity))
+                Text("\(Int(window.usedPercent))%")
+                    .font(.caption2.monospacedDigit())
+                    .frame(width: 34, alignment: .trailing)
+            }
+            if let reset = usageResetDisplay(window: window) {
+                Text(reset).font(.caption2).foregroundStyle(.tertiary)
+            }
+        }
+    }
+}
+
 struct DevKillerMenuView: View {
     @ObservedObject var store: DevKillerStore
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
+            UsageSectionView(
+                usage: store.usage,
+                isLoading: store.isUsageLoading,
+                refresh: { Task { await store.refreshUsage() } }
+            )
+
             HStack(spacing: 8) {
                 Image(systemName: "clock")
                     .foregroundStyle(.secondary)
@@ -280,6 +394,7 @@ struct DevKillerMenuView: View {
         .frame(width: 260)
         .onAppear {
             store.startAutoRefresh()
+            Task { await store.refreshUsage() }
         }
     }
 }
