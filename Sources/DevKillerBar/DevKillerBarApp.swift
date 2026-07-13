@@ -33,9 +33,12 @@ final class DevKillerStore: ObservableObject {
     @Published var isLoading = false
     @Published var message: String?
     @Published var lastCheckedAt: Date?
+    @Published var usage: [ToolUsage] = []
+    @Published var isUsageLoading = false
 
     private let devKiller = DevKiller()
     private let serverProvider: ServerProvider
+    private let usageProvider: UsageProviding
     private let usesSampleServers: Bool
     private let autoRefreshInterval: Duration?
     private var autoRefreshTask: Task<Void, Never>?
@@ -44,6 +47,7 @@ final class DevKillerStore: ObservableObject {
         processInfo: ProcessInfo = .processInfo,
         usesSampleServers: Bool? = nil,
         serverProvider: ServerProvider? = nil,
+        usageProvider: UsageProviding = UsageService(),
         autoRefreshInterval: Duration? = .seconds(3)
     ) {
         let sampleMode = processInfo.environment["DEVKILLER_SAMPLE_SERVERS"] == "1"
@@ -55,6 +59,7 @@ final class DevKillerStore: ObservableObject {
             let devKiller = DevKiller()
             return try devKiller.list(includeLowConfidence: false)
         }
+        self.usageProvider = usageProvider
         self.autoRefreshInterval = autoRefreshInterval
 
         if self.usesSampleServers {
@@ -108,6 +113,18 @@ final class DevKillerStore: ObservableObject {
             self.message = error.localizedDescription
             self.lastCheckedAt = Date()
         }
+    }
+
+    func refreshUsage() async {
+        guard !isUsageLoading else { return }
+        isUsageLoading = true
+        defer { isUsageLoading = false }
+
+        let usageProvider = self.usageProvider
+        let result = await Task.detached {
+            usageProvider.fetchAll()
+        }.value
+        self.usage = result
     }
 
     func startAutoRefresh() {
