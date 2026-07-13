@@ -38,12 +38,15 @@ enum CLI {
                 if results.contains(where: { !$0.succeeded }) {
                     Foundation.exit(1)
                 }
+            case "usage":
+                printUsage(UsageService().fetchAll())
             default:
                 fail("""
                 usage:
                   devkillerctl list [--all]
                   devkillerctl kill <port|pid> [--force]
                   devkillerctl kill-all [--force]
+                  devkillerctl usage
                 """)
             }
         } catch {
@@ -89,6 +92,27 @@ enum CLI {
                 print("pid=\(result.pid) signal=\(result.signal) failed=\"\(error.localizedDescription)\"")
             } else {
                 print("pid=\(result.pid) signal=\(result.signal) terminated")
+            }
+        }
+    }
+
+    private static func printUsage(_ usage: [ToolUsage]) {
+        for tool in usage {
+            let name = tool.tool == .claudeCode ? "claude-code" : "codex"
+            switch tool.state {
+            case .notInstalled:
+                print("\(name): not installed")
+            case let .unavailable(reason):
+                print("\(name): unavailable (\(reason))")
+            case let .available(windows, asOf):
+                let asOfText = asOf.map { " asOf=\($0)" } ?? ""
+                print("\(name):\(asOfText)")
+                for window in windows {
+                    let reset = window.resetsAt.map { " resetsAt=\($0)" }
+                        ?? window.resetText.map { " resets=\"\($0)\"" }
+                        ?? ""
+                    print("  \(window.label): \(window.usedPercent)%\(reset)")
+                }
             }
         }
     }
