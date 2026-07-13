@@ -3,12 +3,10 @@
 .swiftpm/
 dist/
 docs/
-# 설계 스펙은 추적한다 (docs/ 전체 무시의 예외).
+# 설계 스펙/계획은 추적한다 (docs/ 전체 무시의 예외).
 !docs/
 docs/*
 !docs/superpowers/
-docs/superpowers/*
-!docs/superpowers/specs/
 _workspace/
 xcuserdata/
 DerivedData/
