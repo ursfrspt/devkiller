@@ -73,6 +73,17 @@ public struct SystemCommandRunner: CommandRunning {
         process.standardOutput = pipe
         process.standardError = Pipe()
 
+        let readHandle = pipe.fileHandleForReading
+        let bufferLock = NSLock()
+        var buffer = Data()
+        readHandle.readabilityHandler = { handle in
+            let chunk = handle.availableData
+            guard !chunk.isEmpty else { return }
+            bufferLock.lock()
+            buffer.append(chunk)
+            bufferLock.unlock()
+        }
+
         try process.run()
 
         let deadline = Date().addingTimeInterval(Double(timeout.components.seconds))
@@ -81,10 +92,19 @@ public struct SystemCommandRunner: CommandRunning {
         }
         if process.isRunning {
             process.terminate()
+            readHandle.readabilityHandler = nil
             throw UsageRunnerError.timedOut
         }
 
-        let data = pipe.fileHandleForReading.readDataToEndOfFile()
+        readHandle.readabilityHandler = nil
+        let remainder = readHandle.availableData
+        bufferLock.lock()
+        if !remainder.isEmpty {
+            buffer.append(remainder)
+        }
+        let data = buffer
+        bufferLock.unlock()
+
         return String(data: data, encoding: .utf8) ?? ""
     }
 }
