@@ -15,11 +15,18 @@ private struct StubRunner: CommandRunning {
 
 private struct RunnerError: Error {}
 
+private struct TrappingRunner: CommandRunning {
+    func run(executable: String, arguments: [String], timeout: Duration) throws -> String {
+        XCTFail("runner should not be invoked when binary is not installed")
+        return ""
+    }
+}
+
 final class ClaudeUsageProviderTests: XCTestCase {
     func testNotInstalledWhenBinaryMissing() {
         let provider = ClaudeUsageProvider(
             locator: StubLocator(path: nil),
-            runner: StubRunner(result: .success("")),
+            runner: TrappingRunner(),
             timeout: .seconds(20)
         )
         XCTAssertEqual(provider.fetch(), ToolUsage(tool: .claudeCode, state: .notInstalled))
